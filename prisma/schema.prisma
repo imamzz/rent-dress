@@ -1,0 +1,192 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+// Looking for ways to speed up your queries, or scale easily with your serverless or edge functions?
+// Try Prisma Accelerate: https://pris.ly/cli/accelerate-init
+
+generator client {
+  provider = "prisma-client"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+model User {
+  id           String   @id @default(uuid())
+  email        String   @unique @db.VarChar(100)
+  password     String   @db.VarChar(255)
+  name         String   @db.VarChar(255)
+  phone        String?  @db.VarChar(20)
+  refreshToken String?  @db.VarChar(100)
+  role         UserRole @default(CUSTOMER)
+  isActive     Boolean  @default(true)
+
+  orders    Order[]
+  addresses Address[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@map("users")
+}
+
+model Address {
+  id         Int     @id @default(autoincrement()) @db.Integer()
+  street     String? @db.VarChar(255)
+  city       String? @db.VarChar(100)
+  province   String? @db.VarChar(100)
+  country    String  @db.VarChar(100)
+  postalCode String  @db.VarChar(10)
+
+  userId String @db.VarChar(36)
+  user   User   @relation(fields: [userId], references: [id])
+
+  @@map("addresses")
+}
+
+model Category {
+  id          String @id @default(uuid())
+  name        String
+  description String
+
+  products Product[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@map("categories")
+}
+
+model Product {
+  id          String  @id @default(uuid())
+  name        String  @db.VarChar(255)
+  description String? @db.VarChar(255)
+  price       Int     @db.Integer()
+  isActive    Boolean @default(true)
+
+  categoryId String
+  category   Category @relation(fields: [categoryId], references: [id])
+
+  variants ProductVariant[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@map("products")
+}
+
+model Size {
+  id    String @id @default(uuid())
+  label String @db.VarChar(255)
+
+  bust  String @db.VarChar(30)
+  waist String @db.VarChar(30)
+  hips  String @db.VarChar(30)
+
+  variants ProductVariant[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@map("sizes")
+}
+
+model Color {
+  id      String  @id @default(uuid())
+  name    String  @db.VarChar(255)
+  hexCode String? @db.VarChar(10)
+
+  variants ProductVariant[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@map("colors")
+}
+
+model ProductVariant {
+  id String @id @default(uuid())
+
+  productId String  @db.VarChar(36)
+  sizeId    String  @db.VarChar(36)
+  colorId   String? @db.VarChar(36)
+
+  stock Int @db.Integer()
+
+  product Product @relation(fields: [productId], references: [id])
+  size    Size    @relation(fields: [sizeId], references: [id])
+  color   Color?  @relation(fields: [colorId], references: [id])
+
+  bookings   Booking[]
+  orderItems OrderItem[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([productId, sizeId, colorId])
+  @@map("product_variants")
+}
+
+model Order {
+  id     String  @id @default(uuid())
+  userId String? @db.VarChar(36)
+
+  total  Int         @db.Integer()
+  status OrderStatus @default(PENDING)
+
+  user     User?       @relation(fields: [userId], references: [id])
+  items    OrderItem[]
+  bookings Booking[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@map("orders")
+}
+
+model OrderItem {
+  id String @id @default(uuid())
+
+  orderId   String @db.VarChar(36)
+  variantId String @db.VarChar(36)
+
+  price    Int @db.Integer()
+  quantity Int @db.Integer()
+
+  order   Order          @relation(fields: [orderId], references: [id])
+  variant ProductVariant @relation(fields: [variantId], references: [id])
+
+  @@map("order_items")
+}
+
+model Booking {
+  id String @id @default(uuid())
+
+  variantId String  @db.VarChar(36)
+  orderId   String? @db.VarChar(36)
+
+  startDate DateTime @db.Date
+  endDate   DateTime @db.Date
+
+  variant ProductVariant @relation(fields: [variantId], references: [id])
+  order   Order?         @relation(fields: [orderId], references: [id])
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([variantId, startDate, endDate])
+  @@map("bookings")
+}
+
+enum OrderStatus {
+  PENDING
+  PAID
+  CANCELLED
+  COMPLETED
+}
+
+enum UserRole {
+  CUSTOMER
+  ADMIN
+}
