@@ -8,7 +8,7 @@ import Palette from "../../icons/Palette";
 import ShoppingBag from "../../icons/ShoppingBag";
 import Users from "../../icons/Users";
 import FileBarChart from "../../icons/FileBarChart";
-import NavItem from "../molecules/NavItem";
+import NavItem from "../../molecules/NavItem";
 
 const NAV_ITEMS = [
   { href: "/dashboard", label: "Dashboard", icon: <Dashboard /> },

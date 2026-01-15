@@ -1,7 +1,13 @@
+'use client';
+
 import Bell from "@/components/icons/Bell"
 import LogOut from "@/components/icons/LogOut"
+import { redirect } from "next/navigation"
 
 const Topbar = () => {
+  const handleLogout = () => {
+    redirect("/auth/login")
+  }
   return (
     <header className="border-b border-gray-100">
         <div className="px-8 py-4 flex items-center justify-between">
@@ -15,6 +21,7 @@ const Topbar = () => {
             </button>
             <button
               className="flex items-center gap-2 px-3 py-2 text-sm text-gray-600 hover:text-gray-900 hover:bg-gray-50 rounded-md transition-colors cursor-pointer"
+              onClick={handleLogout}
             >
               <LogOut/>
             </button>
