@@ -1,15 +1,10 @@
 import X from "@/src/components/icons/X";
+import { CategoryCreate } from "./type";
 
 type CategoryFormProps = {
   closeModal: () => void;
-  formData: {
-    name: string;
-    description: string;
-  };
-    setFormData: React.Dispatch<React.SetStateAction<{
-    name: string;
-    description: string;
-  }>>;
+  formData: CategoryCreate;
+  setFormData: React.Dispatch<React.SetStateAction<CategoryCreate>>;
   handleSubmit: (e: React.FormEvent) => void;
 };
 

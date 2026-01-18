@@ -9,6 +9,6 @@ export async function POST(req: Request) {
   const body = await req.json();
   const category = await createCategory(body);
   console.log("category", category);
-    return Response.json(category, { status: 201 });
+  return Response.json(category, { status: 201 });
 }
 

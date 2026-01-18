@@ -1,12 +1,6 @@
 import Edit from "@/src/components/icons/Edit";
 import Trash from "@/src/components/icons/Trash";
-
-interface Category {
-  id: string;
-  name: string;
-  description: string;
-  productCount?: number;
-}
+import { Category } from "./type";
 
 const CategoryList = ({
   categories,

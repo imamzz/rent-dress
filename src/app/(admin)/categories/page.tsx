@@ -5,13 +5,7 @@ import CategoryForm from "./CategoryForm";
 import CategoryDelete from "./CategoryDelete";
 import CategoryList from "./CategoryList";
 import { toast } from "@/src/components/ui/toast/use-toast";
-
-interface Category {
-  id: string;
-  name: string;
-  description: string;
-  productCount?: number;
-}
+import { Category } from "./type";
 
 const CategoriesPage = () => {
   const [categories, setCategories] = useState<Category[]>([]);
