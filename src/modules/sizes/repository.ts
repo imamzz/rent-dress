@@ -5,10 +5,6 @@ export async function listSeizes() {
   return prisma.size.findMany({
     orderBy: { createdAt: "desc" },
   });
-//   return {
-//     code: 200,
-//     size: data,
-//   };
 }
 
 export async function findSizeById(id: string) {
