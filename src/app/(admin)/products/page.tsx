@@ -1,46 +1,49 @@
 "use client";
 
+import { useEffect, useState } from "react";
 import Search from "@/src/components/icons/Search";
 import Filter from "@/src/components/icons/Filter";
-import ChevronLefT from "@/src/components/icons/ChevronLeft";
-import ChevronRight from "@/src/components/icons/ChevronRight";
-import { useState } from "react";
-import Eye from "@/src/components/icons/Eye";
-import ProductForm from "@/src/components/ui/ProductForm";
 
-type Variant = {
-  size: string;
-  color: string;
-  quantity: number;
-};
+import ProductForm from "@/src/app/(admin)/products/ProductForm";
+import ProductFilter from "./ProductFilter";
+import ProductTable from "./ProductTable";
+import ProductDetail from "./ProductDetail";
 
-type CreateProductInput = {
-  name: string;
-  description: string;
-  category: string;
-  dailyRate: number;
-  images: string[];
-  variants: Variant[];
-};
+import {
+  CreateProductInput,
+  Variant,
+  Color,
+  Category,
+  Size,
+  TableProduct,
+  ProductDetailType,
+} from "./type";
+
+/* -------------------------------------------------------------------------- */
+/*                                   CONST                                    */
+/* -------------------------------------------------------------------------- */
 
 const initialFormData: CreateProductInput = {
   name: "",
   description: "",
   category: "",
-  dailyRate: 0,
+  price: 0,
   images: [],
   variants: [{ size: "", color: "", quantity: 0 }],
 };
 
-// const [formData, setFormData] = useState<CreateProductInput>(initialFormData);
-
+/* -------------------------------------------------------------------------- */
+/*                                  PAGE                                      */
+/* -------------------------------------------------------------------------- */
 
 const Products = () => {
-  const openModal = () => {
-    setIsModalOpen(true);
-  };
+  /* ------------------------------ UI STATE ------------------------------ */
+
   const [showFilters, setShowFilters] = useState(false);
-  const hasActiveFilters = false; // Replace with actual filter state check
+  const [isModalOpen, setIsModalOpen] = useState(false);
+  const [isOpenProductDetail, setIsOpenProductDetail] = useState(false);
+
+  /* ------------------------------ FILTER STATE --------------------------- */
 
   const [filterCategory, setFilterCategory] = useState("");
   const [filterSize, setFilterSize] = useState("");
@@ -50,108 +53,152 @@ const Products = () => {
   const [singleDate, setSingleDate] = useState("");
   const [startDate, setStartDate] = useState("");
   const [endDate, setEndDate] = useState("");
-  const filteredProducts = []; 
-  const paginatedProducts = filteredProducts; 
-  const [currentPage, setCurrentPage] = useState(1);
-  const handleItemsPerPageChange = (itemsPerPage: number) => {
-    console.log("Change items per page to:", itemsPerPage);
-  };
-  const totalPages = 1; // Replace with actual total pages calculation
-  const [isModalOpen, setIsModalOpen] = useState(false);
-  const [editingProduct, setEditingProduct] = useState<Product | null>(null);
-  const closeModal = () => {
-    setIsModalOpen(false);
-    setEditingProduct(null);
-    
-  };
 
-  const openDetailModal = (product: CreateProductInput) => {
-    alert(`Open detail modal for product: ${product.name}`);
-  };
+  /* ------------------------------ DATA STATE ----------------------------- */
 
+  const [dataProducts, setDataProducts] = useState<TableProduct[]>([]);
+  const [categories, setCategories] = useState<Category[]>([]);
+  const [colors, setColors] = useState<Color[]>([]);
+  const [sizes, setSizes] = useState<Size[]>([]);
+
+  const [selectedProductId, setSelectedProductId] = useState<string | null>(null);
+  const [productDetail, setProductDetail] = useState<ProductDetailType | null>(null);
   const [deleteConfirmId, setDeleteConfirmId] = useState<string | null>(null);
 
   const [formData, setFormData] = useState<CreateProductInput>(initialFormData);
 
-  const formatDate = (dateString: string) => {
-    const date = new Date(dateString);
-    return date.toLocaleDateString("en-US", {
-      year: "numeric",
-      month: "short",
-      day: "numeric",
-    });
+  /* -------------------------------------------------------------------------- */
+  /*                               DATA FETCHING                                */
+  /* -------------------------------------------------------------------------- */
+
+  useEffect(() => {
+    const fetchProducts = async () => {
+      const res = await fetch("/api/products");
+      const json = await res.json();
+      setDataProducts(json.data);
+    }
+    fetchProducts()
+  }, []);
+
+  useEffect(() => {
+    const fetchSizes = async () => {
+      const res = await fetch("/api/sizes");
+      const json = await res.json();
+      setSizes(json);
+    };
+    fetchSizes();
+  }, []);
+
+  useEffect(() => {
+    const fetchColors = async () => {
+      const res = await fetch("/api/colors");
+      const json = await res.json();
+      setColors(json.data);
+    }
+    fetchColors();
+  }, []);
+
+  useEffect(() => {
+    const fetchCategories = async () => {
+      const res = await fetch("/api/categories");
+      const json = await res.json();
+      setCategories(json.data);
+    }
+    fetchCategories();
+  }, []);
+
+  useEffect(() => {
+    if (!selectedProductId) return;
+    const fetchProductDetail = async () => {
+      const res = await fetch(`/api/products/${selectedProductId}`)
+      const json = await res.json();
+      setProductDetail(json.data);
+    }
+    fetchProductDetail();
+  }, [selectedProductId]);
+
+
+  /* -------------------------------------------------------------------------- */
+  /*                                HANDLERS                                    */
+  /* -------------------------------------------------------------------------- */
+
+  const openModal = () => setIsModalOpen(true);
+
+  const closeModal = () => {
+    setIsModalOpen(false);
+    setFormData(initialFormData);
   };
 
-  const updateVariant = (
-    index: number,
-    field: keyof Variant,
-    value: string | number
+  const openDetailModal = (id: string) => {
+    setSelectedProductId(id);
+    setIsOpenProductDetail(true);
+  };
+
+  const handleChange = (
+    e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>
   ) => {
-    setFormData((prev) => {
+    const { name, value } = e.target;
+    setFormData(prev => ({
+      ...prev,
+      [name]: name === "price" ? Number(value) : value,
+    }));
+  };
+
+  const updateVariant = (index: number, field: keyof Variant, value: string | number) => {
+    setFormData(prev => {
       const variants = [...prev.variants];
-      variants[index] = {
-        ...variants[index],
-        [field]: value,
-      };
+      variants[index] = { ...variants[index], [field]: value };
       return { ...prev, variants };
     });
   };
 
   const handleAddVariant = () => {
-    setFormData((prev) => ({
+    setFormData(prev => ({
       ...prev,
       variants: [...prev.variants, { size: "", color: "", quantity: 0 }],
     }));
   };
 
   const handleRemoveVariant = (index: number) => {
-    setFormData((prev) => {
-      const variants = prev.variants.filter((_, i) => i !== index);
-      return { ...prev, variants };
-    });
-  };
-
-  const goToPage = (pageNumber: number) => {
-    setCurrentPage(pageNumber);
-  };
-
-  const handleDelete = (id: string) => {
-    setDeleteConfirmId(id);
-  };
-
-  const confirmDelete = () => {
-    if (deleteConfirmId) {
-      // Implement delete logic here
-      setDeleteConfirmId(null);
-    }
-  };
-
-  const handleChange = (
-    e: React.ChangeEvent<
-      HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement
-    >
-  ) => {
-    const { name, value } = e.target;
-
-    setFormData((prev) => ({
+    setFormData(prev => ({
       ...prev,
-      [name]:
-        name === "dailyRate" ||
-        name === "totalQuantity" ||
-        name === "rentedQuantity"
-          ? Number(value)
-          : value,
+      variants: prev.variants.filter((_, i) => i !== index),
     }));
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
+  const handleImagesChange = (files: File[]) => {
+    const MAX_FILES = 5;
+    const MAX_SIZE = 2 * 1024 * 1024;
 
-    const data = formData;
-    console.log("Form submitted with data:", data);
+    const validFiles = files
+      .slice(0, MAX_FILES)
+      .filter(file => file.size <= MAX_SIZE);
+
+    setFormData(prev => ({ ...prev, images: validFiles }));
   };
 
-  const products = []; // Replace with actual products data
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    const validVariants = formData.variants.filter(
+      v => v.size && v.color && v.quantity > 0
+    );
+
+    const fd = new FormData();
+    fd.append("name", formData.name);
+    fd.append("description", formData.description);
+    fd.append("category", formData.category);
+    fd.append("price", String(formData.price));
+    fd.append("variants", JSON.stringify(validVariants));
+
+    formData.images.forEach(file => fd.append("images", file));
+
+    const res = await fetch("/api/products", { method: "POST", body: fd });
+    const json = await res.json();
+
+    setDataProducts(prev => [json, ...prev]);
+    closeModal();
+  };
+
   const clearAllFilters = () => {
     setFilterCategory("");
     setFilterSize("");
@@ -162,19 +209,25 @@ const Products = () => {
     setStartDate("");
     setEndDate("");
   };
+
+  /* -------------------------------------------------------------------------- */
+  /*                                  RENDER                                    */
+  /* -------------------------------------------------------------------------- */
+
   return (
     <div>
+      {/* Header */}
       <div className="flex items-center justify-between mb-8">
-        <div>
-          <h2 className="text-gray-900">Products</h2>
-        </div>
+        <h2 className="text-gray-900">Products</h2>
         <button
-          onClick={() => openModal()}
-          className="px-4 py-2 bg-gray-900 text-white text-sm rounded-md hover:bg-gray-800 transition-colors"
+          onClick={openModal}
+          className="px-4 py-2 bg-gray-900 text-white text-sm rounded-md"
         >
           Add Product
         </button>
       </div>
+
+      {/* Search & Filter */}
       <div className="bg-white border border-gray-100 rounded-lg mb-6 p-5">
         <div className="flex items-center gap-3 mb-4">
           <div className="flex-1 relative">
@@ -182,414 +235,80 @@ const Products = () => {
             <input
               type="text"
               placeholder="Search products..."
-              // value={searchQuery}
-              // onChange={(e) => {
-              //   setSearchQuery(e.target.value);
-              //   setCurrentPage(1);
-              // }}
               className="w-full pl-9 pr-4 py-2 bg-white border border-gray-200 rounded-md focus:outline-none focus:ring-2 focus:ring-gray-900 focus:border-transparent text-sm"
             />
           </div>
           <button
             onClick={() => setShowFilters(!showFilters)}
-            className={`flex items-center gap-2 px-4 py-2 text-sm rounded-md transition-colors ${
-              showFilters || hasActiveFilters
+            className={`flex items-center gap-2 px-4 py-2 text-sm rounded-md transition-colors ${showFilters
                 ? "bg-gray-900 text-white"
                 : "bg-white border border-gray-200 text-gray-700 hover:bg-gray-50"
-            }`}
+              }`}
           >
-            {/* <Filter className="w-4 h-4" /> */}
-            <Filter />
-            Filters
+            <Filter /> Filters
           </button>
         </div>
       </div>
+
       {showFilters && (
-        <div className="border-t border-gray-100 pt-5 space-y-5">
-          <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-            <div>
-              <label className="block text-sm text-gray-700 mb-2">
-                Category
-              </label>
-              <select
-                value={filterCategory}
-                onChange={(e) => {
-                  setFilterCategory(e.target.value);
-                  // setCurrentPage(1);
-                }}
-                className="w-full px-3 py-2 bg-white border border-gray-200 rounded-md focus:outline-none focus:ring-2 focus:ring-gray-900 focus:border-transparent text-sm"
-              >
-                <option value="">All Categories</option>
-                {/* {categories.map((category) => (
-                  <option key={category.id} value={category.name}>
-                    {category.name}
-                  </option>
-                ))} */}
-              </select>
-            </div>
-
-            <div>
-              <label className="block text-sm text-gray-700 mb-2">Size</label>
-              <select
-                value={filterSize}
-                onChange={(e) => {
-                  setFilterSize(e.target.value);
-                  // setCurrentPage(1);
-                }}
-                className="w-full px-3 py-2 bg-white border border-gray-200 rounded-md focus:outline-none focus:ring-2 focus:ring-gray-900 focus:border-transparent text-sm"
-              >
-                <option value="">All Sizes</option>
-                {/* {sizes.map((size) => (
-                  <option key={size.id} value={size.name}>
-                    {size.name}
-                  </option>
-                ))} */}
-              </select>
-            </div>
-
-            <div>
-              <label className="block text-sm text-gray-700 mb-2">Color</label>
-              <select
-                value={filterColor}
-                onChange={(e) => {
-                  setFilterColor(e.target.value);
-                  // setCurrentPage(1);
-                }}
-                className="w-full px-3 py-2 bg-white border border-gray-200 rounded-md focus:outline-none focus:ring-2 focus:ring-gray-900 focus:border-transparent text-sm"
-              >
-                <option value="">All Colors</option>
-                {/* {colors.map((color) => (
-                  <option key={color.id} value={color.name}>
-                    {color.name}
-                  </option>
-                ))} */}
-              </select>
-            </div>
-
-            <div>
-              <label className="block text-sm text-gray-700 mb-2">Status</label>
-              <select
-                value={filterStatus}
-                onChange={(e) => {
-                  setFilterStatus(e.target.value);
-                  // setCurrentPage(1);
-                }}
-                className="w-full px-3 py-2 bg-white border border-gray-200 rounded-md focus:outline-none focus:ring-2 focus:ring-gray-900 focus:border-transparent text-sm"
-              >
-                <option value="">All Status</option>
-                <option value="available">Available</option>
-                <option value="rented">Fully Rented</option>
-              </select>
-            </div>
-          </div>
-
-          {/* Date Filters */}
-          <div className="border-t border-gray-100 pt-5">
-            <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-              <div>
-                <label className="block text-sm text-gray-700 mb-2">
-                  Filter Type
-                </label>
-                <select
-                  value={filterType}
-                  onChange={(e) => {
-                    setFilterType(e.target.value as "single" | "range");
-                    setSingleDate("");
-                    setStartDate("");
-                    setEndDate("");
-                  }}
-                  className="w-full px-3 py-2 bg-white border border-gray-200 rounded-md focus:outline-none focus:ring-2 focus:ring-gray-900 focus:border-transparent text-sm"
-                >
-                  <option value="single">Single Date</option>
-                  <option value="range">Date Range</option>
-                </select>
-              </div>
-
-              {filterType === "single" ? (
-                <div>
-                  <label className="block text-sm text-gray-700 mb-2">
-                    Unavailable On
-                  </label>
-                  <input
-                    type="date"
-                    value={singleDate}
-                    onChange={(e) => {
-                      setSingleDate(e.target.value);
-                      // setCurrentPage(1);
-                    }}
-                    className="w-full px-3 py-2 bg-white border border-gray-200 rounded-md focus:outline-none focus:ring-2 focus:ring-gray-900 focus:border-transparent text-sm"
-                  />
-                </div>
-              ) : (
-                <>
-                  <div>
-                    <label className="block text-sm text-gray-700 mb-2">
-                      From
-                    </label>
-                    <input
-                      type="date"
-                      value={startDate}
-                      onChange={(e) => {
-                        setStartDate(e.target.value);
-                        // setCurrentPage(1);
-                      }}
-                      className="w-full px-3 py-2 bg-white border border-gray-200 rounded-md focus:outline-none focus:ring-2 focus:ring-gray-900 focus:border-transparent text-sm"
-                    />
-                  </div>
-                  <div>
-                    <label className="block text-sm text-gray-700 mb-2">
-                      Until
-                    </label>
-                    <input
-                      type="date"
-                      value={endDate}
-                      onChange={(e) => {
-                        setEndDate(e.target.value);
-                        // setCurrentPage(1);
-                      }}
-                      className="w-full px-3 py-2 bg-white border border-gray-200 rounded-md focus:outline-none focus:ring-2 focus:ring-gray-900 focus:border-transparent text-sm"
-                    />
-                  </div>
-                </>
-              )}
-            </div>
-          </div>
-
-          <div className="flex items-center justify-between pt-2">
-            <div className="text-sm text-gray-500">
-              {filteredProducts.length} of {products.length} products
-            </div>
-            {hasActiveFilters && (
-              <button
-                onClick={clearAllFilters}
-                className="px-4 py-1.5 text-sm text-gray-600 hover:text-gray-900 transition-colors"
-              >
-                Clear filters
-              </button>
-            )}
-          </div>
-        </div>
+        <ProductFilter
+          filterCategory={filterCategory}
+          setFilterCategory={setFilterCategory}
+          filterSize={filterSize}
+          setFilterSize={setFilterSize}
+          filterColor={filterColor}
+          setFilterColor={setFilterColor}
+          filterStatus={filterStatus}
+          setFilterStatus={setFilterStatus}
+          filterType={filterType}
+          setFilterType={setFilterType}
+          singleDate={singleDate}
+          setSingleDate={setSingleDate}
+          startDate={startDate}
+          setStartDate={setStartDate}
+          endDate={endDate}
+          setEndDate={setEndDate}
+          // filteredProducts={filteredProducts}
+          // products={products}
+          // hasActiveFilters={hasActiveFilters}
+          clearAllFilters={clearAllFilters}
+        />
       )}
-      <div className="bg-white border border-gray-100 rounded-lg overflow-hidden">
-        <div className="overflow-x-auto">
-          <table className="w-full">
-            <thead className="border-b border-gray-100">
-              <tr>
-                <th className="px-6 py-3 text-left text-sm text-gray-600">
-                  Image
-                </th>
-                <th className="px-6 py-3 text-left text-sm text-gray-600">
-                  Name
-                </th>
-                <th className="px-6 py-3 text-left text-sm text-gray-600">
-                  Category
-                </th>
-                <th className="px-6 py-3 text-left text-sm text-gray-600">
-                  Size
-                </th>
-                <th className="px-6 py-3 text-left text-sm text-gray-600">
-                  Color
-                </th>
-                <th className="px-6 py-3 text-left text-sm text-gray-600">
-                  Rate
-                </th>
-                <th className="px-6 py-3 text-left text-sm text-gray-600">
-                  Quantity
-                </th>
-                <th className="px-6 py-3 text-left text-sm text-gray-600">
-                  Unavailable
-                </th>
-                <th className="px-6 py-3 text-left text-sm text-gray-600">
-                  Status
-                </th>
-                <th className="px-6 py-3 text-left text-sm text-gray-600">
-                  Actions
-                </th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-gray-100">
-              {paginatedProducts.length === 0 ? (
-                <tr>
-                  <td
-                    colSpan={10}
-                    className="px-6 py-12 text-center text-sm text-gray-500"
-                  >
-                    No products found
-                  </td>
-                </tr>
-              ) : (
-                paginatedProducts.map((product) => (
-                  <tr key={product.id} className="hover:bg-gray-50/50">
-                    <td className="px-6 py-4">
-                      <div className="flex items-center gap-2">
-                        <img
-                          src={product.images[0]}
-                          alt={product.name}
-                          className="w-12 h-12 object-cover rounded-md"
-                        />
-                        {product.images.length > 1 && (
-                          <span className="text-xs bg-gray-100 text-gray-600 px-1.5 py-0.5 rounded">
-                            +{product.images.length - 1}
-                          </span>
-                        )}
-                      </div>
-                    </td>
-                    <td className="px-6 py-4">
-                      <div>
-                        <div className="text-gray-900 text-sm">
-                          {product.name}
-                        </div>
-                        <div className="text-xs text-gray-500 mt-0.5">
-                          {product.description}
-                        </div>
-                      </div>
-                    </td>
-                    <td className="px-6 py-4 text-sm text-gray-700">
-                      {product.category}
-                    </td>
-                    <td className="px-6 py-4 text-sm text-gray-700">
-                      {product.size}
-                    </td>
-                    <td className="px-6 py-4 text-sm text-gray-700">
-                      {product.color}
-                    </td>
-                    <td className="px-6 py-4 text-sm text-gray-900">
-                      ${product.dailyRate}
-                    </td>
-                    <td className="px-6 py-4">
-                      <div className="text-sm text-gray-700">
-                        <span
-                          className={
-                            product.rentedQuantity > 0 ? "text-orange-600" : ""
-                          }
-                        >
-                          {product.rentedQuantity}
-                        </span>
-                        {" / "}
-                        <span>{product.totalQuantity}</span>
-                      </div>
-                      <div className="text-xs text-gray-500">
-                        {product.totalQuantity - product.rentedQuantity}{" "}
-                        available
-                      </div>
-                    </td>
-                    <td className="px-6 py-4">
-                      <div className="text-xs">
-                        {product.unavailableFrom ? (
-                          <>
-                            <span className="text-gray-700">
-                              {formatDate(product.unavailableFrom)}
-                            </span>
-                            {product.unavailableUntil && (
-                              <>
-                                <br />
-                                <span className="text-gray-500">
-                                  to {formatDate(product.unavailableUntil)}
-                                </span>
-                              </>
-                            )}
-                          </>
-                        ) : (
-                          <span className="text-gray-400">—</span>
-                        )}
-                      </div>
-                    </td>
-                    <td className="px-6 py-4">
-                      <span
-                        className={`px-2 py-1 rounded text-xs ${
-                          product.totalQuantity > product.rentedQuantity
-                            ? "bg-green-50 text-green-700"
-                            : "bg-red-50 text-red-700"
-                        }`}
-                      >
-                        {product.totalQuantity > product.rentedQuantity
-                          ? "Available"
-                          : "Rented"}
-                      </span>
-                    </td>
-                    <td className="px-6 py-4">
-                      <div className="flex items-center gap-1">
-                        <button
-                          onClick={() => openDetailModal(product)}
-                          className="p-1.5 text-gray-400 hover:text-blue-600 transition-colors"
-                          title="View Details"
-                        >
-                          {/* <Eye className="w-4 h-4" /> */}
-                          <Eye />
-                        </button>
-                        <button
-                          // onClick={() => openModal(product)}
-                          className="p-1.5 text-gray-400 hover:text-gray-900 transition-colors"
-                          title="Edit"
-                        >
-                          {/* <Edit2 className="w-4 h-4" /> */}
-                        </button>
-                        <button
-                          onClick={() => setDeleteConfirmId(product.id)}
-                          className="p-1.5 text-gray-400 hover:text-red-600 transition-colors"
-                          title="Delete"
-                        >
-                          {/* <Trash2 className="w-4 h-4" /> */}
-                        </button>
-                      </div>
-                    </td>
-                  </tr>
-                ))
-              )}
-            </tbody>
-          </table>
-        </div>
-        <div className="border-t border-gray-100 px-6 py-4 flex items-center justify-between">
-          <div className="flex items-center gap-2">
-            <label className="text-sm text-gray-600">Show:</label>
-            <select
-              // value={itemsPerPage}
-              onChange={(e) =>
-                handleItemsPerPageChange(parseInt(e.target.value))
-              }
-              className="px-3 py-1.5 bg-white border border-gray-200 rounded-md focus:outline-none focus:ring-2 focus:ring-gray-900 focus:border-transparent text-sm"
-            >
-              <option value={10}>10</option>
-              <option value={20}>20</option>
-              <option value={50}>50</option>
-            </select>
-          </div>
 
-          <div className="flex items-center gap-2">
-            <button
-              onClick={() => goToPage(currentPage - 1)}
-              // disabled={currentPage === 1}
-              className="p-1.5 text-gray-600 hover:text-gray-900 disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
-            >
-              <ChevronLefT className="w-4 h-4" />
-            </button>
-            <span className="text-sm text-gray-700">
-              {/* {currentPage} / {totalPages} */}
-            </span>
-            <button
-              onClick={() => goToPage(currentPage + 1)}
-              disabled={currentPage === totalPages}
-              className="p-1.5 text-gray-600 hover:text-gray-900 disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
-            >
-              <ChevronRight className="w-4 h-4" />
-            </button>
-          </div>
-        </div>
-      </div>
+      <ProductTable
+        products={dataProducts}
+        openDetailModal={openDetailModal}
+        openModal={openModal}
+        setDeleteConfirmId={setDeleteConfirmId}
+      />
+
       {isModalOpen && (
         <ProductForm
           formData={formData}
           handleChange={handleChange}
+          handleImagesChange={handleImagesChange}
           handleSubmit={handleSubmit}
           updateVariant={updateVariant}
           handleAddVariant={handleAddVariant}
+          handleRemoveVariant={handleRemoveVariant}
           closeModal={closeModal}
           mode="add"
-          handleRemoveVariant={handleRemoveVariant}
+          categories={categories}
+          colors={colors}
+          sizes={sizes}
         />
-
       )}
-      ;
+
+      {isOpenProductDetail && productDetail && (
+        <ProductDetail
+          product={productDetail}
+          closeDetailModal={() => {
+            setIsOpenProductDetail(false);
+            setSelectedProductId(null);
+            setProductDetail(null);
+          }}
+        />
+      )}
     </div>
   );
 };

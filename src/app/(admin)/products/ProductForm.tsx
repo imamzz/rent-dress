@@ -1,29 +1,19 @@
 "use client";
 
 import X from "@/src/components/icons/X";
-
-type Variant = {
-  size: string;
-  color: string;
-  quantity: number;
-};
-
-type CreateProductInput = {
-  name: string;
-  description: string;
-  category: string;
-  dailyRate: number;
-  images: string[];
-  variants: Variant[];
-};
+import { Size } from "../sizes/type";
+import { Category } from "../categories/type";
+import { Color } from "../colors/type";
+import { CreateProductInput, Variant } from "./type";
 
 interface ProductFormProps {
   formData: CreateProductInput;
-  handleChange?: (
+  handleChange: (
     e: React.ChangeEvent<
       HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement
     >
   ) => void;
+  handleImagesChange: (files: File[]) => void;
   handleSubmit: (e: React.FormEvent) => void;
   closeModal: () => void;
   mode: "add" | "edit";
@@ -34,17 +24,24 @@ interface ProductFormProps {
   ) => void;
   handleAddVariant?: () => void;
   handleRemoveVariant: (index: number) => void;
+  categories: Category[];
+  sizes: Size[];
+  colors: Color[];
 }
 
 export default function ProductForm({
   formData,
   handleChange,
+  handleImagesChange,
   handleSubmit,
   closeModal,
   mode,
   updateVariant,
   handleAddVariant,
   handleRemoveVariant,
+  categories,
+  sizes,
+  colors,
 }: ProductFormProps) {
   return (
     <div className="fixed inset-0 bg-black/30 flex items-center justify-center z-50 p-4 backdrop-blur-sm">
@@ -102,19 +99,14 @@ export default function ProductForm({
                 className="w-full px-3 py-2 bg-white border border-gray-200 rounded-md focus:outline-none focus:ring-2 focus:ring-gray-900 focus:border-transparent text-sm"
               >
                 <option value="">Select Category</option>
-                {/* {categories.map((category) => (
-                    <option
-                      key={category.id}
-                      value={category.name}
-                    >
-                      {category.name}
-                    </option>
-                  ))} */}
-                <option value="Dresses">Dresses</option>
-                <option value="Tops">Tops</option>
-                <option value="Bottoms">Bottoms</option>
-                <option value="Outerwear">Outerwear</option>
-                <option value="Accessories">Accessories</option>
+                {categories.map((category) => (
+                  <option
+                    key={category.id}
+                    value={category.id}
+                  >
+                    {category.name}
+                  </option>
+                ))}
               </select>
             </div>
             <div>
@@ -122,11 +114,11 @@ export default function ProductForm({
                 Daily Rate ($)
               </label>
               <input
-                name="dailyRate"
+                name="price"
                 type="number"
                 required
                 min="0"
-                value={formData.dailyRate}
+                value={formData.price}
                 onChange={handleChange}
                 className="w-full px-3 py-2 bg-white border border-gray-200 rounded-md focus:outline-none focus:ring-2 focus:ring-gray-900 focus:border-transparent text-sm"
               />
@@ -152,8 +144,14 @@ export default function ProductForm({
                       className="w-full h-[38px] px-3 bg-white border border-gray-200 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-gray-900"
                     >
                       <option value="">Select Size</option>
-                      <option value="S">S</option>
-                      <option value="M">M</option>
+                      {sizes.map((size) => (
+                        <option
+                          key={size.id}
+                          value={size.id}
+                        >
+                          {size.label}
+                        </option>
+                      ))}
                     </select>
                   </div>
 
@@ -168,8 +166,14 @@ export default function ProductForm({
                       className="w-full h-[38px] px-3 bg-white border border-gray-200 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-gray-900"
                     >
                       <option value="">Select Color</option>
-                      <option value="Red">Red</option>
-                      <option value="Black">Black</option>
+                      {colors.map((color) => (
+                        <option
+                          key={color.id}
+                          value={color.id}
+                        >
+                          {color.name}
+                        </option>
+                      ))}
                     </select>
                   </div>
 
@@ -204,6 +208,7 @@ export default function ProductForm({
 
             <div className="flex justify-end mt-2">
               <button
+                type="button"
                 onClick={handleAddVariant}
                 className="px-4 py-2 bg-gray-900 text-white text-sm rounded-md hover:bg-gray-800 transition-colors"
               >
@@ -215,16 +220,34 @@ export default function ProductForm({
 
 
           <div>
-            <label className="block text-sm text-gray-700 mb-2">Image</label>
+            <label className="block text-sm text-gray-700 mb-2">Images</label>
             <input
-              name="images"
               type="file"
-              required
-              value={formData.images}
-              onChange={handleChange}
-              className="w-full px-3 py-2 bg-white border border-gray-200 rounded-md focus:outline-none focus:ring-2 focus:ring-gray-900 focus:border-transparent text-sm"
+              multiple
+              accept="image/*"
+              onChange={(e) => {
+                if (!e.target.files) return;
+                handleImagesChange(Array.from(e.target.files));
+              }}
+              className="w-full px-3 py-2 bg-white border border-gray-200 rounded-md text-sm"
             />
           </div>
+
+
+          {formData.images.length > 0 && (
+            <div className="grid grid-cols-4 gap-3 mt-3">
+              {formData.images.map((file, i) => (
+                <div key={i} className="relative">
+                  <img
+                    src={URL.createObjectURL(file)}
+                    alt="preview"
+                    className="w-full h-24 object-cover rounded"
+                  />
+                </div>
+              ))}
+            </div>
+          )}
+
 
           <div className="flex gap-3 pt-2">
             <button

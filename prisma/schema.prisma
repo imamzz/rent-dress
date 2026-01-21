@@ -71,8 +71,10 @@ model Product {
 
   variants ProductVariant[]
 
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  createdAt DateTime       @default(now())
+  updatedAt DateTime       @updatedAt
+  
+  media     ProductMedia[]
 
   @@map("products")
 }
@@ -187,7 +189,30 @@ enum OrderStatus {
   COMPLETED
 }
 
+model ProductMedia {
+  id String @id @default(uuid())
+
+  productId String  @db.VarChar(36)
+  product   Product @relation(fields: [productId], references: [id])
+
+  type MediaType
+  url  String    @db.Text()
+
+  order     Int     @default(0)
+  isPrimary Boolean @default(false)
+
+  createdAt DateTime @default(now())
+
+  @@index([productId, type])
+  @@map("product_media")
+}
+
 enum UserRole {
   CUSTOMER
   ADMIN
+}
+
+enum MediaType {
+  IMAGE
+  VIDEO
 }

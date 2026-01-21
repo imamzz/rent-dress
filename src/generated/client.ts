@@ -89,3 +89,8 @@ export type OrderItem = Prisma.OrderItemModel
  * 
  */
 export type Booking = Prisma.BookingModel
+/**
+ * Model ProductMedia
+ * 
+ */
+export type ProductMedia = Prisma.ProductMediaModel
